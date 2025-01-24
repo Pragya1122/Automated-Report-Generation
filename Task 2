@@ -1,0 +1,75 @@
+import pandas as pd
+from fpdf import FPDF
+
+# Step 1: Read the dataset
+file_name = "sales_data_sample.csv"
+try:
+    data = pd.read_csv(file_name, encoding='latin1')
+except Exception as e:
+    print("Error reading file:", e)
+    exit()
+
+# Step 2: Define the PDF class
+class PDF(FPDF):
+    def header(self):
+        self.set_font('Arial', 'B', 12)
+        self.cell(0, 10, 'Sales Report', border=0, ln=1, align='C')
+        self.ln(10)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+
+    def chapter_title(self, title):
+        self.set_font('Arial', 'B', 12)
+        self.cell(0, 10, title, border=0, ln=1, align='L')
+        self.ln(5)
+
+    def chapter_body(self, body):
+        self.set_font('Arial', '', 10)
+        self.multi_cell(0, 10, body)
+        self.ln()
+
+# Step 3: Create the PDF object
+pdf = PDF()
+pdf.add_page()
+
+# Step 4: Add report content
+pdf.chapter_title('Summary')
+total_sales = data['SALES'].sum()
+avg_sales = data['SALES'].mean()
+total_orders = len(data)
+summary_text = (
+    f"Total Sales: ${total_sales:,.2f}\n"
+    f"Average Sales per Order: ${avg_sales:,.2f}\n"
+    f"Total Orders Processed: {total_orders}\n"
+)
+pdf.chapter_body(summary_text)
+
+# Add a table of the first 10 rows as an example
+pdf.chapter_title('Sample Orders (Top 10)')
+table_headers = ['Order Number', 'Quantity', 'Price Each', 'Sales', 'Order Date']
+pdf.set_font('Arial', 'B', 10)
+for header in table_headers:
+    pdf.cell(38, 10, header, 1, 0, 'C')
+pdf.ln()
+
+pdf.set_font('Arial', '', 10)
+for _, row in data.head(10).iterrows():
+    pdf.cell(38, 10, str(row['ORDERNUMBER']), 1)
+    pdf.cell(38, 10, str(row['QUANTITYORDERED']), 1)
+    pdf.cell(38, 10, f"${row['PRICEEACH']:.2f}", 1)
+    pdf.cell(38, 10, f"${row['SALES']:.2f}", 1)
+    pdf.cell(38, 10, row['ORDERDATE'], 1)
+    pdf.ln()
+
+# Step 5: Save the PDF
+output_pdf = "Sales_Report.pdf"
+pdf.output(output_pdf)
+print(f"PDF Report '{output_pdf}' generated successfully!")
+
+# Open the PDF automatically
+import os
+os.system(f"start {output_pdf}")  
+
